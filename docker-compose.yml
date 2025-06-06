@@ -1,0 +1,80 @@
+services:
+
+  kafka-1:
+    image: confluentinc/cp-kafka
+    container_name: kafka-1
+    networks:
+      - lan-network
+    ports:
+        - 9092:9092
+    environment:
+        CLUSTER_ID: kafka-docker-cluster-1
+        KAFKA_NODE_ID: 1
+        KAFKA_BROKER_ID: 1
+        KAFKA_AUTO_CREATE_TOPICS: 'true'
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+        KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://localhost:9092'
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        KAFKA_PROCESS_ROLES: 'broker,controller'
+        KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-1:29094'
+        KAFKA_LISTENERS: 'PLAINTEXT://kafka-1:29092,CONTROLLER://kafka-1:29094,PLAINTEXT_HOST://0.0.0.0:9092'
+        KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+        KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+        KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+        KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+    healthcheck:
+        test: echo srvr | nc -z localhost 9092 || exit 1
+        interval: 5s
+        retries: 10
+
+  kafka-2:
+    image: confluentinc/cp-kafka
+    container_name: kafka-2
+    networks:
+      - lan-network
+    ports:
+        - 9093:9093
+    environment:
+        CLUSTER_ID: kafka-docker-cluster-2
+        KAFKA_NODE_ID: 2
+        KAFKA_BROKER_ID: 2
+        KAFKA_AUTO_CREATE_TOPICS: 'true'
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+        KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-2:29093,PLAINTEXT_HOST://localhost:9093'
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        KAFKA_PROCESS_ROLES: 'broker,controller'
+        KAFKA_CONTROLLER_QUORUM_VOTERS: '2@kafka-2:29095'
+        KAFKA_LISTENERS: 'PLAINTEXT://kafka-2:29093,CONTROLLER://kafka-2:29095,PLAINTEXT_HOST://0.0.0.0:9093'
+        KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+        KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+        KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+        KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+    healthcheck:
+        test: echo srvr | nc -z localhost 9093 || exit 1
+        interval: 5s
+        retries: 10
+
+  kafka-monitoring-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kafka-monitoring-app
+    networks:
+      - lan-network
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+    ports:
+      - 8080:8080  # Adjust if your app uses a different port
+
+networks:
+  lan-network:
+    driver: bridge

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: kafkamonitoring
+  profiles:
+    active: local
+  kafka:
+    health:
+      check:
+        interval: 10000
+
+
