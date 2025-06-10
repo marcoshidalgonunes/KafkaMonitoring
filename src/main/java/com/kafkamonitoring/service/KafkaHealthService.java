@@ -21,10 +21,17 @@ public class KafkaHealthService {
     @Scheduled(fixedDelayString = "${kafka.health.check.interval:10000}", initialDelayString = "${kafka.health.check.interval:10000}")
     public void isKafkaHealthy() {
         for (String server : bootstrapServers) {
-            KafkaAdminHelper kafkaAdminComponent = new KafkaAdminHelper(server);
-            if (kafkaAdminComponent.checkHealth()) {
-                log.info("Kafka server {} is healthy.", server);  
-            } 
+            try (KafkaAdminHelper kafkaAdminComponent = new KafkaAdminHelper(server)) {
+                log.info("Checking health of Kafka server: {}", server);
+                
+                // Check if the server is reachable and can list topics
+                List<String> topics = kafkaAdminComponent.getTopicNames();
+                if (!topics.isEmpty()) {
+                    log.info("Kafka server {} is healthy.", topics.size(), server);
+                }
+            } catch (Exception e) {
+                log.error("Kafka server {} is not healthy!", server, e);
+            }
         }
     }
 }
